@@ -21,8 +21,39 @@ libs:
   - origin: https://github.com/mongoose-os-libs/ca-bundle
   - origin: https://github.com/mongoose-os-libs/rpc-service-config
   - origin: https://github.com/mongoose-os-libs/rpc-service-fs
+  - origin: https://github.com/mongoose-os-libs/rpc-common
   - origin: https://github.com/mongoose-os-libs/rpc-uart
   - origin: https://github.com/mongoose-os-libs/mjs
+  - origin: https://github.com/mongoose-os-libs/dash
+  - origin: https://github.com/mongoose-os-libs/dns-sd
+  - origin: https://github.com/mongoose-os-libs/http-server
+  - origin: https://github.com/mongoose-os-libs/provision
+  - origin: https://github.com/mongoose-os-libs/rpc-service-ota
+  - origin: https://github.com/mongoose-os-libs/rpc-service-wifi
+  - origin: https://github.com/mongoose-os-libs/ota-http-server
+  - origin: https://github.com/mongoose-os-libs/ota-shadow
+  - origin: https://github.com/mongoose-os-libs/wifi
 
 # Used by the mos tool to catch mos binaries incompatible with this file format
 manifest_version: 2017-05-18
+
+config_schema:
+  - ["wifi.ap.enable", "b", false, {title: "Enable"}]
+  - ["wifi.ap.ssid", "s", "Mongoose_??????", {title: "SSID"}]
+  - ["wifi.ap.pass", "s", "Mongoose", {title: "Password", type: "password"}]
+  - ["wifi.ap.hidden", "b", false, {title: "Hide SSID"}]
+  - ["wifi.ap.channel", "i", 6, {title: "Channel"}]
+  - ["wifi.ap.max_connections", "i", 10, {title: "Max connections"}]
+  - ["wifi.ap.ip", "s", "192.168.4.1", {title: "IP address"}]
+  - ["wifi.ap.netmask", "s", "255.255.255.0", {title: "Network Mask"}]
+  - ["wifi.ap.gw", "s", "192.168.4.1", {title: "Default Gateway"}]
+  - ["wifi.ap.dhcp_start", "s", "192.168.4.2", {title: "DHCP Start Address"}]
+  - ["wifi.ap.dhcp_end", "s", "192.168.4.100", {title: "DHCP End Address"}]
+  - ["wifi.ap.trigger_on_gpio", "i", -1, {title: "Trigger AP on low GPIO"}]
+  - ["wifi.ap.disable_after", "i", 0, {title: "If > 0, will disable itself after the specified number of seconds"}]
+  - ["wifi.ap.hostname", "s", "", {title: "If not empty, DNS server will resolve given host name to the IP address of AP"}]
+  - ["wifi.sta", "o", {title: "WiFi Station Config"}]
+  - ["wifi.sta.enable", "b", true, {title: "Connect to existing WiFi"}]
+  - ["wifi.sta.ssid", "s", "WIFIMAN", {title: "SSID"}]
+  - ["wifi.sta.pass", "s", "internet19007218", {title: "Password", type: "password"}]  
+  - ["smartlight.pin", "i", 2, {title: "Light GPIO pin"}]

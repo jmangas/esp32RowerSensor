@@ -1,0 +1,4 @@
+{
+    "mos.port": "/dev/ttyUSB0",
+    "mos.board": "ESP32"
+}
