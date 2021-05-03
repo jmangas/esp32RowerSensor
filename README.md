@@ -1,5 +1,15 @@
 # esp32 Rower sensor
 
+Ratio: 100 cm is 4.805 clicks. 1 click is about 20.81 cm.
+
+https://medium.com/@gomaketeam/connecting-the-esp32-devkitc-and-aws-iot-using-mongoose-os-part-ii-88c241fef03
+
+https://lastminuteengineers.com/esp32-deep-sleep-wakeup-sources/
+
+## Pin Diagram 
+
+https://raw.githubusercontent.com/playelek/pinout-doit-32devkitv1/master/pinoutDOIT32devkitv1.png
+
 ## 
 
     sudo chmod a+rw /dev/ttyUSB0

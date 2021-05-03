@@ -5,19 +5,23 @@ load('api_config.js');
 load('api_events.js');
 load('api_gpio.js');
 load('api_rpc.js');
+load('SerLCD.js');
 //load('api_mqtt.js');
 //load('api_shadow.js');
 //load('api_aws.js');
 //load('api_dash.js');
 
-let uartNo = 1;   // Uart number used for this example
+//let uartNo = 1;   // Uart number used for this example
 let rxAcc = '';   // Accumulated Rx data, will be echoed back to Tx
 let value = false;
 let btn = Cfg.get('board.btn1.pin');              // Built-in button GPIO
 let led = 2;              // Built-in LED GPIO number
+let sensorPin = 23;
 let onhi = Cfg.get('board.led1.active_high');     // LED on when high?
 let state = {on: false, btnCount: 0, uptime: 0};  // Device state
+let data = {clicksFromStart: 0, clicksSecond: 0, clicksSinceLastCall: 0};  // Sensar data
 let online = false;                               // Connected to the cloud?
+let modeDebug = true;
 
 let setLED = function(on) {
   let level = onhi ? on : !on;
@@ -25,63 +29,39 @@ let setLED = function(on) {
   print('LED on ->', on);
 };
 
-GPIO.set_mode(led, GPIO.MODE_OUTPUT);
+GPIO.set_mode(sensorPin, GPIO.MODE_INPUT);  // Sensor
+GPIO.set_mode(led, GPIO.MODE_OUTPUT);  // Board Led
 setLED(state.on);
 
+SerLCD.init();
+SerLCD.clearDisplay();
+SerLCD.write("hola");
 
-// Configure UART at 9600 baud
-UART.setConfig(uartNo, {
-  baudRate: 9600,
-  esp32: {
-    gpio: {
-      rx: 16,
-      tx: 17,
-    },
-  },
-});
-
-// Set dispatcher callback, it will be called whenver new Rx data or space in
-// the Tx buffer becomes available
-UART.setDispatcher(uartNo, function(uartNo) {
-  let ra = UART.readAvail(uartNo);
-  if (ra > 0) {
-    // Received new data: print it immediately to the console, and also
-    // accumulate in the "rxAcc" variable which will be echoed back to UART later
-    let data = UART.read(uartNo);
-    print('Received UART data:', data);
-    rxAcc += data;
-  }
+GPIO.set_button_handler(sensorPin, GPIO.PULL_UP, GPIO.INT_EDGE_NEG, 20, function() {
+  data.clicksFromStart++;
+  data.clicksSecond++;
+  data.clicksSinceLastCall++;  
+  if(modeDebug){
+    state.on = !state.on;
+    setLED(state.on);
+    let message = JSON.stringify(data);
+    print(message);
+  } 
 }, null);
 
-// Enable Rx
-UART.setRxEnabled(uartNo, true);
 
-UART.write( uartNo, "\xFE");
-UART.write( uartNo, "\x01"); // Clear display
-UART.write( uartNo, "\x14");
-UART.write( uartNo, "OK");
+Timer.set(1000, Timer.REPEAT, function() {
+  data.clicksSecond = 0;
+}, null);
 
-// Send UART data every second
-// Timer.set(1000 /* milliseconds */, Timer.REPEAT, function() {
-//   value = !value;
-//   UART.write(
-//     uartNo,
-//     'Hello UART! '
-//       + (value ? 'Tick' : 'Tock')
-//       + ' uptime: ' + JSON.stringify(Sys.uptime())
-//       + ' RAM: ' + JSON.stringify(Sys.free_ram())
-//       + (rxAcc.length > 0 ? (' Rx: ' + rxAcc) : '')
-//       + '\n'
-//   );
-//   rxAcc = '';
-// }, null);
-// Update state every second, and report to cloud if online
-Timer.set(6000, Timer.REPEAT, function() {
+
+Timer.set(20000, Timer.REPEAT, function() {
   state.uptime = Sys.uptime();
   state.ram_free = Sys.free_ram();
   print('online:', online, JSON.stringify(state));
   if (online) reportState();
 }, null);
+
 
 if (btn >= 0) {
   let btnCount = 0;
@@ -102,19 +82,6 @@ if (btn >= 0) {
     let message = JSON.stringify(state);
     print(message);
     let sendMQTT = true;
-    // if (Dash.isConnected()) {
-    //   print('== Click!');
-    //   // TODO: Maybe do something else?
-    //   sendMQTT = false;
-    // }
-    // // AWS is handled as plain MQTT since it allows arbitrary topics.
-    // if (AWS.isConnected() || (MQTT.isConnected() && sendMQTT)) {
-    //   let topic = 'devices/' + Cfg.get('device.id') + '/events';
-    //   print('== Publishing to ' + topic + ':', message);
-    //   MQTT.pub(topic, message, 0 /* QoS */);
-    // } else if (sendMQTT) {
-    //   print('== Not connected!');
-    // }
   }, null);
 }
 
@@ -128,10 +95,15 @@ RPC.addHandler('Led', function(args) {
   }
 });
 
-RPC.addHandler('Sum', function(args) {
-  if (typeof(args) === 'object' && typeof(args.a) === 'number' && typeof(args.b) === 'number') {
-    return args.a + args.b;
-  } else {
-    return {error: -1, message: 'Bad request. Expected: {"a":N1,"b":N2}'};
-  }
+RPC.addHandler('ClicksSinceLastCall', function(args) {
+  let clicksSinceLastCall = data.clicksSinceLastCall;
+  data.clicksSinceLastCall =  0;
+  return clicksSinceLastCall;  
+});
+
+RPC.addHandler('ClicksFromStart', function(args) {
+  return data.clicksFromStart;  
+});
+RPC.addHandler('ClicksLastSecond', function(args) {
+  return data.clicksSecond;  
 });
